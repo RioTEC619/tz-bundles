@@ -14,6 +14,7 @@ app.use(express.json({ limit: "20kb" }));
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
+
 const HARAKAPAY_BASE_URL = (
   process.env.HARAKAPAY_BASE_URL || "https://harakapay.net"
 ).replace(/\/$/, "");
@@ -22,9 +23,12 @@ const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY;
 const ADMIN_KEY = process.env.ADMIN_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
 
-// Required environment variables
+// ========================================
+// REQUIRED ENVIRONMENT VARIABLES
+// ========================================
+
 if (!DATABASE_URL) {
-  console.error("DATABASE_URL is required. Configure a PostgreSQL database on Render.");
+  console.error("DATABASE_URL is required. Configure PostgreSQL on Render.");
   process.exit(1);
 }
 
@@ -38,7 +42,10 @@ if (!ADMIN_KEY || ADMIN_KEY.length < 24) {
   process.exit(1);
 }
 
-// PostgreSQL connection
+// ========================================
+// POSTGRESQL CONNECTION
+// ========================================
+
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: process.env.NODE_ENV === "production"
@@ -58,26 +65,25 @@ const PACKAGES = [
     name: "3 GB Data Bundle",
     data: "3 GB",
     amount: 1000,
-    validity: "Validity not specified"
+    validity: "1 Month"
   },
   {
     id: "6gb",
     name: "6 GB Data Bundle",
     data: "6 GB",
     amount: 3000,
-    validity: "Validity not specified"
+    validity: "1 Month"
   },
   {
     id: "9gb",
     name: "9 GB Data Bundle",
     data: "9 GB",
     amount: 5000,
-    validity: "Validity not specified"
+    validity: "1 Month"
   }
 ];
 
-// Generate all 12 packages automatically.
-// These prices apply to every network.
+// Generate 12 bundles: 3 for each network.
 const catalog = NETWORKS.flatMap((network) =>
   PACKAGES.map((bundle) => ({
     id: `${network.toLowerCase()}-${bundle.id}`,
@@ -117,7 +123,7 @@ async function initDb() {
 }
 
 // ========================================
-// PHONE NUMBER VALIDATION
+// TANZANIA PHONE NUMBER VALIDATION
 // ========================================
 
 function normaliseTzPhone(input) {
@@ -175,7 +181,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // ========================================
-// GET ALL BUNDLES
+// GET ALL AVAILABLE BUNDLES
 // ========================================
 
 app.get("/api/bundles", (_req, res) => {
@@ -255,8 +261,9 @@ app.post("/api/orders", async (req, res) => {
 
     await pool.query(
       `INSERT INTO orders
-       (id, phone, network, bundle_id, bundle_name, bundle_data, validity,
-        amount, payment_order_id, payment_status, fulfilment_status)
+       (id, phone, network, bundle_id, bundle_name, bundle_data,
+        validity, amount, payment_order_id, payment_status,
+        fulfilment_status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending','awaiting_payment')`,
       [
         id,
