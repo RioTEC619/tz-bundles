@@ -1,11 +1,19 @@
-{
-  "name": "connection-za-bongo",
+
+  "name": "super-bundle-tz",
   "version": "1.0.0",
+  "private": true,
+  "description": "Tanzanian mobile data bundle storefront with HarakaPay and manual fulfilment",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^4.18.2"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "pg": "^8.13.1"
   }
 }
