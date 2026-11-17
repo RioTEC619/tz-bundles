@@ -62,26 +62,7 @@
       <div id="status" class="status" role="status" aria-live="polite"></div>
       <div class="notice">Payment is processed by HarakaPay. Never share your mobile-money PIN with anyone. Do not close the page until you have noted your order number.</div>
     </section>
-
-    <aside class="panel">
-      <h2>How it works</h2>
-      <div class="steps">
-        <div class="step"><div class="num">1</div><div><strong>Choose your bundle</strong><p>Select Vodacom, Airtel, Halotel or Tigo and the package you need.</p></div></div>
-        <div class="step"><div class="num">2</div><div><strong>Approve payment</strong><p>Enter the recipient's number and approve the mobile-money prompt on your phone.</p></div></div>
-        <div class="step"><div class="num">3</div><div><strong>We activate it manually</strong><p>After payment is confirmed, an administrator activates your bundle and updates the order.</p></div></div>
-      </div>
-      <div class="notice"><strong>Manual fulfilment:</strong> successful payment does not mean the data has already been sent. You will see a confirmation when the administrator marks the order as activated.</div>
-    </aside>
   </main>
-
-  <details class="panel admin">
-    <summary>Admin access</summary>
-    <div class="admin-tools">
-      <input id="adminKey" type="password" autocomplete="off" placeholder="Admin key">
-      <button id="loadOrders" class="secondary">Load orders</button>
-      <div id="adminOrders"></div>
-    </div>
-  </details>
 
   <footer>© <span id="year"></span> SUPER BUNDLE TZ. All rights reserved.</footer>
 </div>
@@ -90,6 +71,7 @@ const $ = (id) => document.getElementById(id);
 let bundles = [], network = "Vodacom", selected = null, currentOrder = null, pollTimer = null;
 
 $("year").textContent = new Date().getFullYear();
+
 
 function showStatus(message, good=true) {
   const el = $("status");
@@ -189,48 +171,6 @@ async function pollStatus() {
   }
 }
 
-$("loadOrders").addEventListener("click", async () => {
-  const key = $("adminKey").value;
-  const container = $("adminOrders");
-  container.textContent = "Loading…";
-  try {
-    const response = await fetch("/api/admin/orders", {headers:{"x-admin-key":key}});
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Admin access denied.");
-    container.innerHTML = "";
-    if (!data.orders.length) { container.textContent = "No orders yet."; return; }
-    data.orders.forEach(order => {
-      const row = document.createElement("div");
-      row.className = "admin-order";
-      const details = document.createElement("div");
-      const title = document.createElement("strong");
-      title.textContent = order.id + " · " + order.network + " " + order.bundle_name;
-      const meta = document.createElement("small");
-      meta.textContent = order.phone + " · " + money(order.amount) + " · payment: " + order.payment_status + " · fulfilment: " + order.fulfilment_status;
-      details.append(title, meta);
-      row.appendChild(details);
-      if (order.payment_status === "completed" && order.fulfilment_status !== "fulfilled") {
-        const btn = document.createElement("button");
-        btn.className = "secondary";
-        btn.textContent = "Mark activated";
-        btn.addEventListener("click", async () => {
-          const note = prompt("Optional activation note (e.g. bundle sent at 14:30):") || "";
-          const done = await fetch("/api/admin/orders/" + encodeURIComponent(order.id) + "/fulfil", {
-            method:"POST", headers:{"Content-Type":"application/json","x-admin-key":key},
-            body:JSON.stringify({note})
-          });
-          const result = await done.json();
-          if (!done.ok) alert(result.message || "Could not update order.");
-          $("loadOrders").click();
-        });
-        row.appendChild(btn);
-      }
-      container.appendChild(row);
-    });
-  } catch (err) {
-    container.textContent = err.message;
-  }
-});
 
 loadBundles();
 </script>
