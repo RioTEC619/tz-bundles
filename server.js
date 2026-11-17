@@ -61,13 +61,6 @@ const NETWORKS = ["Vodacom", "Airtel", "Halotel", "Tigo"];
 
 const PACKAGES = [
   {
-    id: "3gb",
-    name: "3 GB Data Bundle",
-    data: "3 GB",
-    amount: 1000,
-    validity: "1 Month"
-  },
-  {
     id: "6gb",
     name: "6 GB Data Bundle",
     data: "6 GB",
@@ -83,7 +76,7 @@ const PACKAGES = [
   }
 ];
 
-// Generate 12 bundles: 3 for each network.
+// Generate 8 bundles: 2 for each network.
 const catalog = NETWORKS.flatMap((network) =>
   PACKAGES.map((bundle) => ({
     id: `${network.toLowerCase()}-${bundle.id}`,
@@ -479,4 +472,3 @@ initDb()
     console.error("Database initialisation failed:", err);
     process.exit(1);
   });
-
