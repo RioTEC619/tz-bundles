@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -36,7 +37,10 @@
 <body>
 <div class="wrap">
   <header>
-    <div><div class="brand">SUPER <span>BUNDLE</span> TZ</div><div class="tag">TANZANIA DATA BUNDLES • FAST • SIMPLE</div></div>
+    <div>
+      <div class="brand">SUPER <span>BUNDLE</span> TZ</div>
+      <div class="tag">TANZANIA DATA BUNDLES • FAST • SIMPLE</div>
+    </div>
     <div class="tag">Vodacom · Airtel · Halotel · Tigo</div>
   </header>
 
@@ -49,99 +53,165 @@
   <main class="layout">
     <section class="panel">
       <h2>1. Choose your network</h2>
+
       <div class="networks" id="networks">
         <button class="network active" data-network="Vodacom">Vodacom</button>
         <button class="network" data-network="Airtel">Airtel</button>
         <button class="network" data-network="Halotel">Halotel</button>
         <button class="network" data-network="Tigo">Tigo</button>
       </div>
+
       <h2>2. Select a bundle</h2>
-      <div id="bundleList" class="bundle-list"><div class="notice">Loading available bundles…</div></div>
-      <div class="field"><label for="phone">3. Phone number receiving the bundle</label><input id="phone" inputmode="tel" autocomplete="tel" placeholder="0712 345 678"></div>
-      <button id="payButton" class="primary" disabled>Continue to payment</button>
+
+      <div id="bundleList" class="bundle-list">
+        <div class="notice">Loading available bundles…</div>
+      </div>
+
+      <div class="field">
+        <label for="phone">3. Phone number receiving the bundle</label>
+        <input id="phone" inputmode="tel" autocomplete="tel" placeholder="0712 345 678">
+      </div>
+
+      <button id="payButton" class="primary" disabled>
+        Continue to payment
+      </button>
+
       <div id="status" class="status" role="status" aria-live="polite"></div>
-      <div class="notice">Payment is processed by HarakaPay. Never share your mobile-money PIN with anyone. Do not close the page until you have noted your order number.</div>
     </section>
   </main>
 
-  <footer>© <span id="year"></span> SUPER BUNDLE TZ. All rights reserved.</footer>
+  <footer>
+    © <span id="year"></span> SUPER BUNDLE TZ. All rights reserved.
+  </footer>
 </div>
+
 <script>
 const $ = (id) => document.getElementById(id);
-let bundles = [], network = "Vodacom", selected = null, currentOrder = null, pollTimer = null;
+
+let bundles = [];
+let network = "Vodacom";
+let selected = null;
+let currentOrder = null;
+let pollTimer = null;
 
 $("year").textContent = new Date().getFullYear();
 
-
-function showStatus(message, good=true) {
+function showStatus(message, good = true) {
   const el = $("status");
   el.textContent = message;
   el.className = "status show " + (good ? "good" : "bad");
 }
-function money(value) { return "TZS " + Number(value).toLocaleString("en-TZ"); }
+
+function money(value) {
+  return "TZS " + Number(value).toLocaleString("en-TZ");
+}
 
 function renderBundles() {
   const list = bundles.filter(b => b.network === network);
+
   $("bundleList").innerHTML = "";
   selected = null;
   $("payButton").disabled = true;
+
   if (!list.length) {
-    $("bundleList").innerHTML = '<div class="notice">No bundles are configured for ' + network + ' yet. The store administrator must add verified package details and prices before customers can order.</div>';
+    $("bundleList").innerHTML =
+      '<div class="notice">No bundles are configured for ' +
+      network +
+      ' yet. The store administrator must add verified package details and prices before customers can order.</div>';
     return;
   }
+
   list.forEach((b) => {
     const item = document.createElement("button");
+
     item.type = "button";
     item.className = "bundle";
-    item.innerHTML = '<span><strong></strong><small></small></span><span class="price"></span>';
+
+    item.innerHTML =
+      '<span><strong></strong><small></small></span><span class="price"></span>';
+
     item.querySelector("strong").textContent = b.name;
-    item.querySelector("small").textContent = [b.data, b.validity].filter(Boolean).join(" · ");
+
+    item.querySelector("small").textContent =
+      [b.data, b.validity].filter(Boolean).join(" · ");
+
     item.querySelector(".price").textContent = money(b.amount);
+
     item.addEventListener("click", () => {
-      document.querySelectorAll(".bundle").forEach(x => x.classList.remove("selected"));
+      document.querySelectorAll(".bundle").forEach(x =>
+        x.classList.remove("selected")
+      );
+
       item.classList.add("selected");
       selected = b;
       $("payButton").disabled = false;
       $("status").className = "status";
     });
+
     $("bundleList").appendChild(item);
   });
 }
-document.querySelectorAll(".network").forEach(btn => btn.addEventListener("click", () => {
-  document.querySelectorAll(".network").forEach(x => x.classList.remove("active"));
-  btn.classList.add("active");
-  network = btn.dataset.network;
-  renderBundles();
-}));
+
+document.querySelectorAll(".network").forEach(btn =>
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".network").forEach(x =>
+      x.classList.remove("active")
+    );
+
+    btn.classList.add("active");
+    network = btn.dataset.network;
+    renderBundles();
+  })
+);
 
 async function loadBundles() {
   try {
     const response = await fetch("/api/bundles");
     const data = await response.json();
+
     bundles = data.bundles || [];
     renderBundles();
+
   } catch {
-    $("bundleList").textContent = "Could not load bundles. Refresh the page.";
+    $("bundleList").textContent =
+      "Could not load bundles. Refresh the page.";
   }
 }
 
 $("payButton").addEventListener("click", async () => {
   if (!selected) return;
+
   $("payButton").disabled = true;
   showStatus("Sending payment request…");
+
   try {
     const response = await fetch("/api/orders", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({phone:$("phone").value, bundleId:selected.id})
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        phone: $("phone").value,
+        bundleId: selected.id
+      })
     });
+
     const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || "Payment request failed.");
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Payment request failed.");
+    }
+
     currentOrder = data.orderId;
+
     showStatus(data.message + " Order: " + currentOrder);
+
     pollStatus();
+
     if (pollTimer) clearInterval(pollTimer);
+
     pollTimer = setInterval(pollStatus, 6000);
+
   } catch (err) {
     showStatus(err.message, false);
     $("payButton").disabled = false;
@@ -150,27 +220,50 @@ $("payButton").addEventListener("click", async () => {
 
 async function pollStatus() {
   if (!currentOrder) return;
+
   try {
-    const response = await fetch("/api/orders/" + encodeURIComponent(currentOrder) + "/status");
+    const response = await fetch(
+      "/api/orders/" + encodeURIComponent(currentOrder) + "/status"
+    );
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Could not check order.");
+
+    if (!response.ok) {
+      throw new Error(data.message || "Could not check order.");
+    }
+
     if (data.paymentStatus === "completed") {
-      showStatus("Payment confirmed. " + data.message + " Keep your order number: " + currentOrder);
+      showStatus(
+        "Payment confirmed. " +
+        data.message +
+        " Keep your order number: " +
+        currentOrder
+      );
+
     } else if (data.paymentStatus === "failed") {
-      showStatus(data.message + " Order: " + currentOrder, false);
+      showStatus(
+        data.message + " Order: " + currentOrder,
+        false
+      );
+
       clearInterval(pollTimer);
+
     } else {
       showStatus(data.message + " Order: " + currentOrder);
     }
+
     if (data.fulfilmentStatus === "fulfilled") {
-      showStatus("Bundle activated successfully! Order: " + currentOrder);
+      showStatus(
+        "Bundle activated successfully! Order: " + currentOrder
+      );
+
       clearInterval(pollTimer);
     }
+
   } catch (err) {
     showStatus(err.message, false);
   }
 }
-
 
 loadBundles();
 </script>
